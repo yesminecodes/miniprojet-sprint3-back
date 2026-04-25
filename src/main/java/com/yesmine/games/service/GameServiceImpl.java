@@ -1,9 +1,15 @@
 package com.yesmine.games.service;
 
 import com.yesmine.games.entities.Game;
+import com.yesmine.games.entities.Image;
 import com.yesmine.games.entities.Type;
 import com.yesmine.games.repos.GameRepository;
+import com.yesmine.games.repos.ImageRepository;
 import com.yesmine.games.repos.TypeRepository;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,9 +23,11 @@ public class GameServiceImpl implements GameService {
     @Autowired
     private TypeRepository typeRepository;
 
+    @Autowired
+    private ImageRepository imageRepository;
+
     @Override
     public Game saveGame(Game game) {
-        // Ensure type is managed before saving
         if (game.getType() != null && game.getType().getIdType() != null) {
             Type managedType = typeRepository.findById(game.getType().getIdType())
                     .orElseThrow(() -> new RuntimeException("Type not found"));
@@ -30,23 +38,24 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public Game updateGame(Game game) {
-        // Fetch existing game to ensure it exists
         Game existingGame = gameRepository.findById(game.getIdGame())
                 .orElseThrow(() -> new RuntimeException("Game not found"));
 
-        // Update fields
         existingGame.setNomGame(game.getNomGame());
         existingGame.setPrixGame(game.getPrixGame());
         existingGame.setDateCreation(game.getDateCreation());
 
-        // Update type if provided
+        // ✅ update type
         if (game.getType() != null && game.getType().getIdType() != null) {
             Type managedType = typeRepository.findById(game.getType().getIdType())
                     .orElseThrow(() -> new RuntimeException("Type not found"));
             existingGame.setType(managedType);
         } else {
-            existingGame.setType(null); // clear type if null
+            existingGame.setType(null);
         }
+
+        // ✅ no image update here — images are managed separately via ImageService
+        // images are linked to game via @ManyToOne in Image entity
 
         return gameRepository.save(existingGame);
     }
@@ -54,11 +63,6 @@ public class GameServiceImpl implements GameService {
     @Override
     public void deleteGame(Game game) {
         gameRepository.delete(game);
-    }
-
-    @Override
-    public void deleteGameById(Long id) {
-        gameRepository.deleteById(id);
     }
 
     @Override
@@ -105,5 +109,23 @@ public class GameServiceImpl implements GameService {
     @Override
     public List<Game> trierGamesNomsPrix() {
         return gameRepository.trierGamesNomsPrix();
+    }
+
+    @Override
+    public void deleteGameById(Long id) {
+        Game game = gameRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Game not found"));
+
+        // delete image file from filesystem before deleting the game
+        if (game.getImagePath() != null) {
+            try {
+                Files.delete(Paths.get(System.getProperty("user.home"), "images", game.getImagePath()));
+            } catch (IOException e) {
+                // log but don't block deletion if file is missing
+                System.err.println("Could not delete image file: " + e.getMessage());
+            }
+        }
+
+        gameRepository.delete(game); // cascade handles DB images
     }
 }

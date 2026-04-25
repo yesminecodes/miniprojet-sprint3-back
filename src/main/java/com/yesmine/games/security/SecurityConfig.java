@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+                    config.setAllowedOriginPatterns(Collections.singletonList("*"));
                     config.setAllowedMethods(Collections.singletonList("*"));
                     config.setAllowedHeaders(Collections.singletonList("*"));
                     config.setExposedHeaders(Collections.singletonList("Authorization"));
@@ -39,6 +39,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/addgame/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/updategame/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/delgame/**").hasAuthority("ADMIN")
+                        .requestMatchers(
+                                "/api/image/**"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(new JWTAuthorizationFilter(),
                         UsernamePasswordAuthenticationFilter.class);

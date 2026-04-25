@@ -23,7 +23,7 @@ public class GameRESTController {
     public Game createGame(@RequestBody Game Game) {
         return gameService.saveGame(Game);
     }
-    @RequestMapping(path="/updategame",method = RequestMethod.PUT)
+    @RequestMapping(path="/updategame/{id}",method = RequestMethod.PUT)
     public Game updateGame(@RequestBody Game Game) {
         return gameService.updateGame(Game);
     }
