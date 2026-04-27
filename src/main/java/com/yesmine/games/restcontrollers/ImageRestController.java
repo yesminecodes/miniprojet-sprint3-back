@@ -64,7 +64,7 @@ public class ImageRestController {
         g.setImagePath(filename);
 
         Path imagesDir = Paths.get(System.getProperty("user.home"), "images");
-        Files.createDirectories(imagesDir); // ensure dir exists
+        Files.createDirectories(imagesDir);
         Files.write(imagesDir.resolve(filename), file.getBytes());
 
         gameService.saveGame(g);
@@ -79,13 +79,13 @@ public class ImageRestController {
         Game g = gameService.getGame(id);
 
         if (g.getImagePath() == null || g.getImagePath().isBlank()) {
-            return ResponseEntity.notFound().build(); // 404 - no image uploaded yet
+            return ResponseEntity.notFound().build();
         }
 
         Path filePath = Paths.get(System.getProperty("user.home"), "images", g.getImagePath());
 
         if (!Files.exists(filePath)) {
-            return ResponseEntity.notFound().build(); // 404 - DB has path but file is missing
+            return ResponseEntity.notFound().build();
         }
 
         return ResponseEntity.ok(Files.readAllBytes(filePath));

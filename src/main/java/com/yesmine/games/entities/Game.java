@@ -48,16 +48,14 @@ public class Game {
     public Type getType() { return type; }
     public void setType(Type type) { this.type = type; }
 
-    public List<Image> getImages() { return images; }          // ✅ renamed to getImages
+    public List<Image> getImages() { return images; }
     public void setImages(List<Image> images) { this.images = images; }
 
-    // ✅ helper to add a single image
     public void addImage(Image image) {
         images.add(image);
         image.setGame(this);
     }
 
-    // ✅ helper to remove a single image
     public void removeImage(Image image) {
         images.remove(image);
         image.setGame(null);
