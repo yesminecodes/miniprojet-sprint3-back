@@ -20,35 +20,61 @@ import java.util.Collection;
 import java.util.List;
 
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        System.out.println(">>> REQUEST: " + request.getMethod() + " " + request.getRequestURI());
 
-        String jwt = request.getHeader("Authorization");
-        if (jwt == null || !jwt.startsWith("Bearer ")) {
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+
+        String path = request.getRequestURI();
+
+        // OPTIONAL: bypass public endpoints
+        if (path.startsWith("/games/api/image/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(SecParams.SECRET)).build();
-            jwt = jwt.substring(7);
-            DecodedJWT decodedJWT = verifier.verify(jwt);
+            String token = authorizationHeader.substring(7);
+
+            JWTVerifier verifier = JWT
+                    .require(Algorithm.HMAC256(SecParams.SECRET))
+                    .build();
+
+            DecodedJWT decodedJWT = verifier.verify(token);
+
             String username = decodedJWT.getSubject();
-            List<String> roles = decodedJWT.getClaims().get("roles").asList(String.class);
+
+            List<String> roles = decodedJWT.getClaim("roles").asList(String.class);
+
             Collection<GrantedAuthority> authorities = new ArrayList<>();
-            for (String r : roles)
-                authorities.add(new SimpleGrantedAuthority(r));
-            UsernamePasswordAuthenticationToken user =
+
+            if (roles != null) {
+                for (String role : roles) {
+                    authorities.add(new SimpleGrantedAuthority(role));
+                }
+            }
+
+            UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(username, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(user);
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
+            SecurityContextHolder.clearContext();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token");
+            response.getWriter().write("Invalid or expired token");
         }
     }
 }

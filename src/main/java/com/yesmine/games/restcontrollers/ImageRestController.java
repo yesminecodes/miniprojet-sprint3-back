@@ -56,18 +56,23 @@ public class ImageRestController {
             @PathVariable("id") Long id) throws IOException {
 
         Game g = gameService.getGame(id);
+
         if (g == null) {
             return ResponseEntity.notFound().build();
         }
 
-        String filename = id + ".jpg";
-        g.setImagePath(filename);
+        String filename = id + "_" + file.getOriginalFilename();
 
         Path imagesDir = Paths.get(System.getProperty("user.home"), "images");
         Files.createDirectories(imagesDir);
+
         Files.write(imagesDir.resolve(filename), file.getBytes());
 
-        gameService.saveGame(g);
+        g.setImagePath(filename);
+
+        gameService.updateGame(g);
+
+        System.out.println("UPLOAD IMAGE CALLED FOR GAME " + id);
         return ResponseEntity.ok().build();
     }
 
@@ -89,6 +94,20 @@ public class ImageRestController {
         }
 
         return ResponseEntity.ok(Files.readAllBytes(filePath));
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteImage(@PathVariable Long id) throws IOException {
+
+        Image img = imageService.getImageDetails(id);
+
+        if (img == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        imageService.deleteImage(id);
+
+        return ResponseEntity.ok().build();
     }
 
 }
